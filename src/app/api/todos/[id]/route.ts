@@ -2,17 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { deleteCache } from '@/lib/redis'
 
-interface Params {
-  params: { id: string }
-}
-
-export async function GET(request: NextRequest, { params }: Params) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const userId = parseInt(request.headers.get('x-user-id') || '0')
-    const id = parseInt(params.id)
+    const { id } = await params
+    const idNum = parseInt(id)
 
     const todo = await prisma.todo.findFirst({
-      where: { id, userId },
+      where: { id: idNum, userId },
     })
 
     if (!todo) {
@@ -26,14 +23,15 @@ export async function GET(request: NextRequest, { params }: Params) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: Params) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const userId = parseInt(request.headers.get('x-user-id') || '0')
-    const id = parseInt(params.id)
+    const { id } = await params
+    const idNum = parseInt(id)
     const { title, completed } = await request.json()
 
     const todo = await prisma.todo.findFirst({
-      where: { id, userId },
+      where: { id: idNum, userId },
     })
 
     if (!todo) {
@@ -41,7 +39,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
 
     const updatedTodo = await prisma.todo.update({
-      where: { id },
+      where: { id: idNum },
       data: { title, completed },
     })
 
@@ -56,13 +54,14 @@ export async function PUT(request: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: Params) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const userId = parseInt(request.headers.get('x-user-id') || '0')
-    const id = parseInt(params.id)
+    const { id } = await params
+    const idNum = parseInt(id)
 
     const todo = await prisma.todo.findFirst({
-      where: { id, userId },
+      where: { id: idNum, userId },
     })
 
     if (!todo) {
@@ -70,7 +69,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     }
 
     await prisma.todo.delete({
-      where: { id },
+      where: { id: idNum },
     })
 
     // Invalidate cache
